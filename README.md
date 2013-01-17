@@ -13,6 +13,20 @@ webshot('google.com', 'google.png', function(err) {
 });
 ```
 
+Alternately, the screenshot can be streamed back to the caller:
+
+```javascript
+var webshot = require('webshot');
+
+webshot('google.com', function(err, renderStream) {
+  var file = fs.createWriteStream('google.png', {encoding: 'binary'});
+
+  renderStream.on('data', function(data) {
+    file.write(data.toString('binary'), 'binary');
+  });
+});
+```
+
 An example showing how to take a screenshot of a site's mobile version:
 
 ```javascript
@@ -54,12 +68,12 @@ An optional `options` object can be passed as the third parameter in a call to w
   </thead>
   <tbody>
     <tr>
-      <th>screenSize</th> 
+      <th>windowSize</th> 
       <td>
 <pre>{ width: 1024
 , height: 768 }</pre>
       </td>
-      <td>The dimensions of the browser window</td> 
+      <td>The dimensions of the browser window. <em>screenSize</em> is an alias for this property.</td> 
     </tr>
     <tr>
       <th>shotSize</th> 
@@ -93,6 +107,19 @@ An optional `options` object can be passed as the third parameter in a call to w
       <td>undefined</td>
       <td>An arbitrary function to be executed on the requested page. The script executes within the page's 
       context and can be used to modify the page before a screenshot is taken. 
+      </td> 
+    </tr>
+    <tr>
+      <th>streamType</th> 
+      <td>'png'</td>
+      <td>If streaming is used, this designates the file format of the streamed rendering. Possible values are 
+      'png', 'jpg', and 'jpeg'.
+      </td> 
+    </tr> 
+    <tr>
+      <th>renderDelay</th>
+      <td>0</td>
+      <td>Number of milliseconds to wait after a page loads before taking the screenshot.
       </td> 
     </tr>
   </tbody>

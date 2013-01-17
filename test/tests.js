@@ -2,10 +2,9 @@ var webshot = require('../lib/webshot')
   , should = require('should')
   , fs = require('fs')
   , im = require('imagemagick')
-  , testFile = 'test.png';
+  , testFile = __dirname + '/test.png';
 
 describe('Creating screenshot images', function() {
-
   it('creates a screenshot', function(done) {
     this.timeout(20000);
 
@@ -39,6 +38,31 @@ describe('Creating screenshot images', function() {
       }, 100);
     });
   });
+
+  it('streams a screenshot', function(done) {
+    this.timeout(20000);
+
+    fs.unlink(testFile, function(err) {
+      if (err) return done(err);
+
+      webshot('google.com', function(err, renderStream) {
+        if (err) return done(err);
+
+        var file = fs.createWriteStream(testFile, {encoding: 'binary'});
+
+        renderStream.on('data', function(data) {
+          file.write(data.toString('binary'), 'binary');
+        });
+
+        renderStream.on('end', function() { 
+          fs.exists(testFile, function(exists) {
+            exists.should.equal(true);
+            done();
+          });
+        });
+      });
+    });
+  });
 });
 
 describe('Handling screenshot dimension options', function() {
@@ -47,7 +71,7 @@ describe('Handling screenshot dimension options', function() {
     this.timeout(20000);
 
     var options = {
-      screenSize: {
+      windowSize: {
         width: 1000
       , height: 1000
       }
@@ -57,13 +81,12 @@ describe('Handling screenshot dimension options', function() {
       if (err) return done(err);
 
       im.identify(testFile, function(err, features) {
-        features.width.should.equal(options.screenSize.width);
-        features.height.should.equal(options.screenSize.height);
+        features.width.should.equal(options.windowSize.width);
+        features.height.should.equal(options.windowSize.height);
         done();
       });
     });
   });
-
 
   it('creates a properly-sized image for partial shots', function(done) {
     this.timeout(20000);
@@ -91,10 +114,58 @@ describe('Handling screenshot dimension options', function() {
       });
     });
   });
+
+  it('properly handles height "all" with body height', function(done) {
+    this.timeout(20000);
+
+    var fixture1 = 'file://' + __dirname + '/fixtures/1.html';
+    var options = {
+      shotSize: {
+        width: 'window'
+      , height: 'all'
+      }
+    };
+
+    webshot(fixture1, testFile, options, function(err) {
+      if (err) return done(err);
+
+      im.identify(testFile, function(err, features) {
+        if (err) return done(err);
+
+        features.width.should.equal(1024);
+        features.height.should.equal(999);
+        done();
+      });
+    });
+  });
+
+  it('properly handles height "all" with document height', function(done) {
+    this.timeout(20000);
+
+    var fixture2 = 'file://' + __dirname + '/fixtures/2.html';
+    var options = {
+      shotSize: {
+        width: 'window'
+      , height: 'all'
+      }
+    };
+
+    webshot(fixture2, testFile, options, function(err) {
+      if (err) return done(err);
+
+      im.identify(testFile, function(err, features) {
+        if (err) return done(err);
+
+        features.width.should.equal(1024);
+        features.height.should.equal(999);
+        done();
+      });
+    });
+  });
 });
 
 describe('Passing errors for bad input', function() {
-
+  
   it('Passes an error if an invalid extension is given', function(done) {
 
     webshot('betabeat.com', 'output.xyz', function(err) {
